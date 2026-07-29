@@ -47,8 +47,8 @@ python manage.py createsuperuser
 ```
 
 Данные:
-- Email: `admin@mail.ru`
-- Username: `admin`
+- Email: `admin2@mail.ru`
+- Username: `admin2`
 - Password: `12345678`
 
 ### 7. Запустить сервер
