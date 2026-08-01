@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator
 
-# Модель пользователя
+# Пользователь — основа всего
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True)
@@ -15,24 +15,24 @@ class User(AbstractUser):
     def __str__(self):
         return self.email
 
-# Модель магазина
+# Магазин — тут всё просто
 class Shop(models.Model):
     name = models.CharField(max_length=100, unique=True)
     url = models.URLField(blank=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='shop')
-    state = models.BooleanField(default=True)
+    state = models.BooleanField(default=True)  # Принимает заказы или нет
     
     def __str__(self):
         return self.name
 
-# Модель категории
+# Категория — иногда их путают с параметрами
 class Category(models.Model):
     name = models.CharField(max_length=40, unique=True)
     
     def __str__(self):
         return self.name
 
-# Модель товара
+# Товар — без категории не живёт
 class Product(models.Model):
     name = models.CharField(max_length=80)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products', blank=True)
@@ -40,28 +40,28 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-# Модель информации о товаре
+# Информация о товаре — тут всё сложно
 class ProductInfo(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_infos')
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='product_infos')
     name = models.CharField(max_length=80)
-    model = models.CharField(max_length=80, blank=True)
-    external_id = models.PositiveIntegerField()
+    model = models.CharField(max_length=80, blank=True)  # Модель товара
+    external_id = models.PositiveIntegerField()  # ID поставщика
     quantity = models.PositiveIntegerField(default=0)
     price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     price_rrc = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     
     class Meta:
-        unique_together = ('product', 'shop', 'external_id')
+        unique_together = ('product', 'shop', 'external_id')  # Чтобы не было дублей
 
-# Модель параметра
+# Параметры — характеристики товаров
 class Parameter(models.Model):
     name = models.CharField(max_length=40, unique=True)
     
     def __str__(self):
         return self.name
 
-# Модель параметра товара
+# Связь товара и параметров
 class ProductParameter(models.Model):
     product_info = models.ForeignKey(ProductInfo, on_delete=models.CASCADE, related_name='product_parameters')
     parameter = models.ForeignKey(Parameter, on_delete=models.CASCADE, related_name='product_parameters')
@@ -72,7 +72,7 @@ class ProductParameter(models.Model):
             models.UniqueConstraint(fields=['product_info', 'parameter'], name='unique_product_parameter')
         ]
 
-# Модель контакта
+# Контакты пользователя
 class Contact(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='contacts')
     city = models.CharField(max_length=50)
@@ -86,16 +86,16 @@ class Contact(models.Model):
     def __str__(self):
         return f"{self.city}, {self.street} {self.house}"
 
-# Модель заказа
+# Заказ — главный объект
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('basket', 'Статус корзины'),
+        ('basket', 'Корзина'),
         ('new', 'Новый'),
-        ('confirmed', 'Подтвержден'),
+        ('confirmed', 'Подтверждён'),
         ('assembled', 'Собран'),
         ('sent', 'Отправлен'),
         ('delivered', 'Доставлен'),
-        ('canceled', 'Отменен'),
+        ('canceled', 'Отменён'),
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
@@ -107,7 +107,7 @@ class Order(models.Model):
     def __str__(self):
         return f"Заказ #{self.id}"
 
-# Модель товара в заказе
+# Товары в заказе
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
     product_info = models.ForeignKey(ProductInfo, on_delete=models.CASCADE, related_name='order_items')
@@ -116,7 +116,7 @@ class OrderItem(models.Model):
     def __str__(self):
         return f"{self.product_info.name} x{self.quantity}"
 
-# Модель токена подтверждения email
+# Токен для подтверждения email — иногда теряется, но мы его ищем
 class ConfirmEmailToken(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='confirm_email_tokens')
     key = models.CharField(max_length=40, unique=True)
