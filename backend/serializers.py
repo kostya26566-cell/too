@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import User, Shop, Category, Product, ProductInfo, Contact, Order, OrderItem
+from .models import *
 
 User = get_user_model()
 
@@ -45,10 +45,14 @@ class ProductSerializer(serializers.ModelSerializer):
 class ProductInfoSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
     shop_name = serializers.CharField(source='shop.name', read_only=True)
+    parameters = serializers.SerializerMethodField()
     
     class Meta:
         model = ProductInfo
         fields = '__all__'
+    
+    def get_parameters(self, obj):
+        return {p.parameter.name: p.value for p in obj.product_parameters.all()}
 
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
@@ -65,8 +69,12 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(source='order_items', many=True, read_only=True)
+    total_sum = serializers.SerializerMethodField()
     
     class Meta:
         model = Order
         fields = '__all__'
         read_only_fields = ('user', 'created_at', 'updated_at')
+    
+    def get_total_sum(self, obj):
+        return sum(item.product_info.price * item.quantity for item in obj.order_items.all())
